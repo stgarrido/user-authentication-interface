@@ -18,9 +18,9 @@ flags_ = cv2.CASCADE_FIND_BIGGEST_OBJECT | \
 class Register(QMainWindow):
   def __init__(self):
     super(Register, self).__init__()
-    loadUi('interfaz/registro.ui', self)
-    self.setWindowIcon(QIcon('interfaz/camara.jpg'))
-    self.setStyleSheet('QMainWindow{background-image: url(interfaz/blue.jpg)}')
+    loadUi('interface/registro.ui', self)
+    self.setWindowIcon(QIcon('interface/images/camara.jpg'))
+    self.setStyleSheet('QMainWindow{background-image: url(interface/images/blue.jpg)}')
     self.setWindowTitle('Registro')
     # CLASIFICADOR
     self.detector = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')    # Carga el clasificador detector
@@ -63,7 +63,6 @@ class Register(QMainWindow):
       cv2.putText(frame, 'Registrando a ' + self.nombre, (pos_cara[0][0], pos_cara[0][1]-5), cv2.FONT_ITALIC, 1, (250,0,0), cv2.LINE_4)
       cara = frame[y: y + h, x: x + w]                # Recorta la cara
       cara = cv2.cvtColor(cara, cv2.COLOR_BGR2GRAY)   # Pasa a escala de grises
-      # cara = cv2.equalizeHist(cara)                 # Normaliza la cara (Posiblemente no necesario)
       if cara.shape < (130,130):                      # Redimensiona la cara
         cara = cv2.resize(cara, (130,130), interpolation=cv2.INTER_LINEAR) # INTER_CUBIC
       elif cara.shape > (130,130):
@@ -75,7 +74,6 @@ class Register(QMainWindow):
       frame =QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
       frame = frame.rgbSwapped()
       self.label.setPixmap(QPixmap.fromImage(frame))
-
 
   def informaciones(self):
     self.info = Instructions()

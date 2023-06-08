@@ -19,9 +19,9 @@ flags_ = cv2.CASCADE_FIND_BIGGEST_OBJECT | \
 class MainProgram(QMainWindow):
 	def __init__(self):
 		super(MainProgram, self).__init__()
-		loadUi('interfaz/interfaz.ui', self)
-		self.setWindowIcon(QIcon('interfaz/escudo.png'))
-		self.setStyleSheet('QMainWindow{background-image: url(interfaz/blue.jpg)}')
+		loadUi('interface/interfaz.ui', self)
+		self.setWindowIcon(QIcon('interface/images/escudo.png'))
+		self.setStyleSheet('QMainWindow{background-image: url(interface/images/blue.jpg)}')
 		# CLASIFICADOR
 		self.detector = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')    # Carga el clasificador detector
 		# PARA INICIAR EL PROGRAMA ENTRENADO
@@ -40,10 +40,10 @@ class MainProgram(QMainWindow):
 		self.actualizar.clicked.connect(self.actual)
 		self.salir.clicked.connect(self.salida)
 		self.lomito()
-		self.label_2.setPixmap(QPixmap('interfaz/logo_eln.png'))
+		self.label_2.setPixmap(QPixmap('interface/images/logo_eln.png'))
 
 	def lomito(self):
-		self.figura = cv2.imread('interfaz/figura.jpg')
+		self.figura = cv2.imread('interface/images/figura.jpg')
 		self.figura = cv2.resize(self.figura, (640, 480), interpolation = cv2.INTER_CUBIC)
 		self.figura = QImage(self.figura, self.figura.shape[1], self.figura.shape[0], QImage.Format_RGB888)
 		self.figura = self.figura.rgbSwapped()
