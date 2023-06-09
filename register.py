@@ -5,6 +5,7 @@ from PyQt5.uic import loadUi
 from PyQt5.QtGui import QPixmap, QImage, QIcon
 from PyQt5.QtCore import QTimer
 from instructions import *
+from database import *
 
 # Valores default para una deteccion de rostro cualquiera
 scale_factor = 1.2
@@ -24,6 +25,8 @@ class Register(QMainWindow):
     self.setWindowTitle('Registro')
     # CLASIFICADOR
     self.detector = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')    # Carga el clasificador detector
+    # BASE DE DATOS
+    self.database = Database()
     # VARIABLES AUXILIARES
     self.cam = False
     self.cont = 0
@@ -35,6 +38,7 @@ class Register(QMainWindow):
     self.salir.clicked.connect(self.salida)
     # CREACION CARPETA DE USUARIO
     self.nombre, ok = QInputDialog.getText(self, 'Registro', 'Ingrese el nombre del nuevo usuario: ')
+    self.database.add_user(self.nombre)
     dir_proyecto = os.path.dirname(os.path.abspath(__file__))   # Obtiene directorio del .py
     dir_imagenes = os.path.join(dir_proyecto, 'Fotos')          # Crea la carpeta fotos
     self.carp_usu = dir_imagenes + '/' + self.nombre            # Añade el nombre para el directo del usuario
@@ -69,6 +73,7 @@ class Register(QMainWindow):
         cara = cv2.resize(cara, (130,130), interpolation=cv2.INTER_AREA)
       nombre_foto = self.nombre + str(self.cont) + '.png'     # Asigna nombre a la cara
       cv2.imwrite(self.carp_usu + '/' + nombre_foto, cara)   # Guarda la cara
+      self.database.add_photo(cara, self.nombre)
       self.cont += 1
     if self.cam:
       frame =QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
@@ -83,6 +88,7 @@ class Register(QMainWindow):
       self.cam = False
       self.camara.release()
     self.close()
+    self.database.disconnect()
 
   def advertencia(self):          # Avisa que el programa ya esta funcionando
     QMessageBox.information(self, 'Informacion', 'El programa ya está registrando', QMessageBox.Ok)
