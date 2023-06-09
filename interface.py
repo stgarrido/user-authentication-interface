@@ -22,10 +22,8 @@ class MainProgram(QMainWindow):
 		loadUi('interface/interfaz.ui', self)
 		self.setWindowIcon(QIcon('interface/images/escudo.png'))
 		self.setStyleSheet('QMainWindow{background-image: url(interface/images/blue.jpg)}')
-		# CLASIFICADOR
-		self.detector = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')    # Carga el clasificador detector
-		# PARA INICIAR EL PROGRAMA ENTRENADO
-		# No lo he querido agregar hasta que termine de transcribir el programa
+		# DETECTOR DE CARAS
+		self.detector = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 		# VARIABLES AUXILIARES
 		self.cam = False
 		self.cont_int = 0
