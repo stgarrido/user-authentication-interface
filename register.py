@@ -1,5 +1,5 @@
-import os
 import cv2
+import base64
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QInputDialog
 from PyQt5.uic import loadUi
 from PyQt5.QtGui import QPixmap, QImage, QIcon
@@ -27,23 +27,19 @@ class Register(QMainWindow):
     self.detector = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')    # Carga el clasificador detector
     # BASE DE DATOS
     self.database = Database()
-    # VARIABLES AUXILIARES
+    # ESTADO DE LA CAMARA
     self.cam = False
-    self.cont = 0
     # INTERFAZ
     self.show()
     # CONEXIONES CON BOTONES
     self.comenzar.clicked.connect(self.comienzo)
     self.informacion.clicked.connect(self.informaciones)
     self.salir.clicked.connect(self.salida)
-    # CREACION CARPETA DE USUARIO
+    # CREACION DE USUARIO
     self.nombre, ok = QInputDialog.getText(self, 'Registro', 'Ingrese el nombre del nuevo usuario: ')
+    if not ok:
+      self.salida()
     self.database.add_user(self.nombre)
-    dir_proyecto = os.path.dirname(os.path.abspath(__file__))   # Obtiene directorio del .py
-    dir_imagenes = os.path.join(dir_proyecto, 'Fotos')          # Crea la carpeta fotos
-    self.carp_usu = dir_imagenes + '/' + self.nombre            # Añade el nombre para el directo del usuario
-    if not os.path.exists(self.carp_usu):                       # Crea la carpeta de usuario
-      os.makedirs(self.carp_usu)
 
   def comienzo(self):
     if self.cam:
@@ -56,6 +52,7 @@ class Register(QMainWindow):
       self.timer.timeout.connect(self.grabar)
       self.timer.start(1)
 
+  # Recolecta las fotos del usuario a registrar
   def grabar(self):
     ret, frame = self.camara.read()
     pos_cara = self.detector.detectMultiScale(frame,
@@ -68,21 +65,21 @@ class Register(QMainWindow):
       cara = frame[y: y + h, x: x + w]                # Recorta la cara
       cara = cv2.cvtColor(cara, cv2.COLOR_BGR2GRAY)   # Pasa a escala de grises
       if cara.shape < (130,130):                      # Redimensiona la cara
-        cara = cv2.resize(cara, (130,130), interpolation=cv2.INTER_LINEAR) # INTER_CUBIC
+        cara = cv2.resize(cara, (130,130), interpolation=cv2.INTER_LINEAR)
       elif cara.shape > (130,130):
         cara = cv2.resize(cara, (130,130), interpolation=cv2.INTER_AREA)
-      nombre_foto = self.nombre + str(self.cont) + '.png'     # Asigna nombre a la cara
-      cv2.imwrite(self.carp_usu + '/' + nombre_foto, cara)   # Guarda la cara
-      self.database.add_photo(cara, self.nombre)
-      self.cont += 1
+      cara = base64.b64encode(cara)                   # Codifica en base64
+      self.database.add_photo(cara, self.nombre)      # Guarda la foto en la base de datos
     if self.cam:
       frame =QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
       frame = frame.rgbSwapped()
       self.label.setPixmap(QPixmap.fromImage(frame))
 
+  # Ventana que explica como funciona el registro
   def informaciones(self):
     self.info = Instructions()
 
+  # Cierra la ventana de registro
   def salida(self):
     if self.cam:
       self.cam = False
@@ -90,5 +87,6 @@ class Register(QMainWindow):
     self.close()
     self.database.disconnect()
 
-  def advertencia(self):          # Avisa que el programa ya esta funcionando
+  # Avisa que el programa ya esta funcionando
+  def advertencia(self):
     QMessageBox.information(self, 'Informacion', 'El programa ya está registrando', QMessageBox.Ok)

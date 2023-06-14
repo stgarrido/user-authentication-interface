@@ -38,7 +38,6 @@ class Database():
       self.cursor.execute(useQuery)
       self.cursor.execute(usersTableQuery)
       self.cursor.execute(photosTableQuery)
-      print('Base de datos iniciada con éxito.')
     except mariadb.Error as ex:
       print('Error al intertar conectarse a la base de datos: ', ex)
 
@@ -62,6 +61,24 @@ class Database():
       print('Foto agregada con éxito')
     except mariadb.Error as ex:
       print('Error al agregar foto de usuario: ', ex)
+
+  def read_users(self):
+    try:
+      usersQuery = "SELECT id, name FROM users;"
+      self.cursor.execute(usersQuery)
+      users = self.cursor.fetchall()
+      return users
+    except mariadb.Error as ex:
+      print('Error al leer los usuarios: ', ex)
+
+  def read_photos(self, userId):
+    try:
+      photosQuery = f"SELECT photo, user_id FROM photos WHERE user_id = {userId}"
+      self.cursor.execute(photosQuery)
+      photos = self.cursor.fetchall()
+      return photos
+    except mariadb.Error as ex:
+      print('Error al recopilar las fotos de usuarios: ', ex)
 
   def disconnect(self):
     self.cursor.close()
