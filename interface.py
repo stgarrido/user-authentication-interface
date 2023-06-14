@@ -1,6 +1,6 @@
-import os
 import cv2
 import numpy as np
+from PIL import Image
 from PyQt5.uic import loadUi
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QPixmap, QImage, QIcon
@@ -24,13 +24,13 @@ class MainProgram(QMainWindow):
 		self.setStyleSheet('QMainWindow{background-image: url(interface/images/blue.jpg)}')
 		# DETECTOR DE CARAS
 		self.detector = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+		# BASE DE DATOS
+		self.database = Database()
 		# VARIABLES AUXILIARES
 		self.cam = False
-		self.cont_int = 0
-		self.cont_ini = 0
-		self.fotos = []
-		self.nombres = []
-		self.nombres_dic = {}
+		self.photos = []
+		self.labels = []
+		self.userIds = {}
 		# CONEXIONES CON BOTONES
 		self.encender.clicked.connect(self.grabar)
 		self.detener.clicked.connect(self.quitar)
@@ -47,19 +47,17 @@ class MainProgram(QMainWindow):
 		self.figura = self.figura.rgbSwapped()
 		self.label.setPixmap(QPixmap.fromImage(self.figura))
 
-	# FUNCIONES DE BOTONES
 	# Inicia el programa
 	def grabar(self):
 		if self.cam:
 			self.advertencia1()
 		else:
-			self.cont_init = 0
 			self.cam = True
 			self.camara = cv2.VideoCapture(0)
 			# Contador que muestra cada 20ms un frame de la camara
 			self.timer = QTimer(self)
 			self.timer.timeout.connect(self.mostrar)
-			self.timer.start(20)
+			self.timer.start(1)
     
 	#Enciende la camara
 	def mostrar(self):
@@ -84,14 +82,14 @@ class MainProgram(QMainWindow):
 			elif self.caras.shape > (130,130):
 				self.caras = cv2.resize(self.caras, (130,130), interpolation=cv2.INTER_AREA)
 			# Deteccion
-			if len(self.fotos) == 0:
+			if len(self.photos) == 0:
 				cv2.putText(frame, 'Desconocido', (pos_cara[0][0], pos_cara[0][1]-5), cv2.FONT_ITALIC, 1, (0,0,250), cv2.LINE_4)
 				cv2.rectangle(frame, (x,y), (x+w,y+h), (0,0,250), 2)
 			else:
 				self.result = self.model_lpbh.predict(self.caras)
 				if self.result[1] < 90:
 					cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 2)
-					cv2.putText(frame, self.nombres_dic[self.result[0]], (pos_cara[0][0], pos_cara[0][1]-5), cv2.FONT_ITALIC, 1, (250,0,0), cv2.LINE_4)
+					cv2.putText(frame, self.userIds[self.result[0]], (pos_cara[0][0], pos_cara[0][1]-5), cv2.FONT_ITALIC, 1, (250,0,0), cv2.LINE_4)
 				else:
 					cv2.putText(frame, 'Desconocido', (pos_cara[0][0], pos_cara[0][1]-5), cv2.FONT_ITALIC, 1, (0,0,250), cv2.LINE_4)
 					cv2.rectangle(frame, (x,y), (x+w,y+h), (0,0,250), 2)
@@ -118,20 +116,24 @@ class MainProgram(QMainWindow):
 
 	# Entrena el modelo
 	def actual(self):
-		if len(os.listdir(os.path.dirname(os.path.abspath(__file__)) + '/Fotos')) == 0:
+		self.users = self.database.read_users()
+		for users in self.users:
+			self.userIds[users[0]] = users[1]
+		if not self.users:
 			self.advertencia3()
 		else:
-			# Se juntan los datos
-			personas = [persona for persona in os.listdir('Fotos/')]
-			for i, persona in enumerate(personas):
-				self.nombres_dic[i] = persona
-				for imagen in os.listdir('Fotos/' + persona):
-					self.fotos.append(cv2.imread('Fotos/' + persona + '/' + imagen, 0))
-					self.nombres.append(i)
-			self.nombres = np.array(self.nombres)
-			# Entrena el modelo
+			self.data = list(map(lambda x: self.database.read_photos(x[0]), self.users))
+			for byUsers in self.data:
+				for photos in byUsers:
+					toByteString = base64.decodebytes(photos[0])        # Decodifica a bytes string
+					toNumpyArray = np.asarray(bytearray(toByteString))  # Convierte a numpy array
+					photo = np.reshape(toNumpyArray, (130,130))         # Convierte numpy array a matriz
+					self.photos.append(photo)
+					self.labels.append(photos[1])
+			self.labels = np.array(self.labels)
+			# Entrenamiento del modelo de reconocimiento facial
 			self.model_lpbh = cv2.face.LBPHFaceRecognizer_create()  # Crea el modelo
-			self.model_lpbh.train(self.fotos, self.nombres)         # Entrena el modelo
+			self.model_lpbh.train(self.photos, self.labels)         # Entrena el modelo
 			self.advertencia4()
 
 	# Cierra el programa en modo seguro (apaga la camara)
@@ -152,7 +154,7 @@ class MainProgram(QMainWindow):
 		QMessageBox.information(self, 'Error', 'La cámara ya está apagada', QMessageBox.Ok)
 
 	def advertencia3(self):
-		QMessageBox.information(self, 'Error', 'El directorio está vacío', QMessageBox.Ok)
+		QMessageBox.information(self, 'Error', 'La base de datos está vacía', QMessageBox.Ok)
 	
 	def advertencia4(self):
 		QMessageBox.information(self, 'Listo', 'La base de datos fue actualizada correctamente', QMessageBox.Ok)
