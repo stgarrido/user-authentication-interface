@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-from PIL import Image
 from PyQt5.uic import loadUi
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QPixmap, QImage, QIcon
